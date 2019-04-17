@@ -47,8 +47,13 @@ namespace RandomSolutions
 
         static object _execute(string code, Dictionary<string, Tuple<Type, object>> args, IEnumerable<Assembly> refs)
         {
+            refs = (refs ?? new[] { Assembly.GetEntryAssembly(), Assembly.GetCallingAssembly() })
+                .Concat(args?.Select(x => x.Value?.Item1?.Assembly) ?? new Assembly[0])
+                .Where(x => x != null);
+
             var codeToCompile = _getCompileCode(code, args);
 
+            
             MethodInfo compiled = null;
 
             if (CacheLimit == 0)

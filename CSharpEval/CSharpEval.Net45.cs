@@ -16,7 +16,7 @@ namespace RandomSolutions
         static MethodInfo _compile(string code, IEnumerable<Assembly> refs)
         {
             var assemblyNames = _assemblyNames
-                .Concat((refs ?? new[] { Assembly.GetEntryAssembly(), Assembly.GetCallingAssembly() }).Select(x => x.ManifestModule.Name))
+                .Concat(refs.Select(x => x.ManifestModule.Name))
                 .Distinct()
                 .ToArray();
 

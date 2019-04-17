@@ -17,7 +17,7 @@ namespace RandomSolutions
         {
             var assemblyPath = Path.GetDirectoryName(typeof(object).Assembly.Location);
 
-            var references = _references.Concat((refs ?? new[] { Assembly.GetEntryAssembly(), Assembly.GetCallingAssembly() }).Select(x=>x.Location)).Distinct();
+            var references = _references.Concat(refs.Select(x=>x.Location)).Distinct();
 
             var compilation = CSharpCompilation.Create(
                 assemblyName: Path.GetRandomFileName(),
