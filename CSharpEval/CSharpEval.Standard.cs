@@ -17,14 +17,14 @@ namespace RandomSolutions
         {
             var assemblyPath = Path.GetDirectoryName(typeof(object).Assembly.Location);
 
-            var references = _references.Concat(refs.Select(x=>x.Location)).Distinct();
+            var references = _references.Concat(refs.Select(x => x.Location)).Distinct();
 
             var compilation = CSharpCompilation.Create(
                 assemblyName: Path.GetRandomFileName(),
                 syntaxTrees: new[] { CSharpSyntaxTree.ParseText(code) },
                 references: references.Select(x => MetadataReference.CreateFromFile(x)),
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
-            
+
             using (var ms = new MemoryStream())
             {
                 var result = compilation.Emit(ms);
@@ -43,13 +43,14 @@ namespace RandomSolutions
                 }
             }
         }
-        
+
         static string _assemblyPath = Path.GetDirectoryName(typeof(object).Assembly.Location);
 
         static IEnumerable<string> _references = _commonRefs.Select(x => x.Location)
             .Concat(new[] {
+                Path.Combine(_assemblyPath, "netstandard.dll"),
                 Path.Combine(_assemblyPath, "System.Runtime.dll"),
-            }).Distinct();
+            }.Where(x => File.Exists(x))).Distinct();
     }
 }
 #endif

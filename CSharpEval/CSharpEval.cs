@@ -138,7 +138,11 @@ namespace RandomSolutions
         static Dictionary<string, Tuple<Type, object>> _getArgs(object args)
         {
             return args.GetType().GetProperties().Where(x => x.CanRead)
-                .ToDictionary(x => x.Name, x => new Tuple<Type, object>(x.PropertyType, x.GetValue(args)));
+                .ToDictionary(x => x.Name, x =>
+                {
+                    var val = x.GetValue(args);
+                    return new Tuple<Type, object>(val?.GetType() ?? x.PropertyType, val);
+                });
         }
 
         static Dictionary<string, Tuple<Type, object>> _getArgs(Dictionary<string, object> args)
