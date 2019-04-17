@@ -10,17 +10,20 @@ namespace RandomSolutions
 {
     public partial class CSharpEval
     {
+
         public static T Execute<T>(string code, object args, IEnumerable<Assembly> refs = null)
-        {
-            return Execute<T>(code, args.GetType().GetProperties().ToDictionary(x => x.Name, x => x.GetValue(args)), refs);
-        }
+            => Execute<T>(code, _getArgs(args), refs);
 
         public static void Execute(string code, object args, IEnumerable<Assembly> refs = null)
-        {
-            Execute(code, args.GetType().GetProperties().ToDictionary(x => x.Name, x => x.GetValue(args)), refs);
-        }
+            => Execute(code, _getArgs(args), refs);
 
-        public static T Execute<T>(string code, Dictionary<string, object> args = null, IEnumerable<Assembly> refs = null)
+        public static T Execute<T>(string code, Dictionary<string, object> args, IEnumerable<Assembly> refs = null)
+            => Execute<T>(code, _getArgs(args), refs);
+
+        public static void Execute(string code, Dictionary<string, object> args, IEnumerable<Assembly> refs = null)
+            => Execute(code, _getArgs(args), refs);
+
+        public static T Execute<T>(string code, Dictionary<string, Tuple<Type, object>> args = null, IEnumerable<Assembly> refs = null)
         {
             if (code.IndexOf(_return) < 0)
                 code = string.Concat(_return, code);
@@ -28,12 +31,12 @@ namespace RandomSolutions
             return (T)_execute(code, args, refs);
         }
 
-        public static void Execute(string code, Dictionary<string, object> args = null, IEnumerable<Assembly> refs = null)
+        public static void Execute(string code, Dictionary<string, Tuple<Type, object>> args = null, IEnumerable<Assembly> refs = null)
         {
             _execute(string.Concat(code, "; return null"), args, refs);
         }
 
-        public static uint CacheLimit = 10 << 10;
+        public static uint CacheLimit = 1 << 12;
 
         public static void ClearCache()
         {
@@ -42,7 +45,7 @@ namespace RandomSolutions
 
 
 
-        static object _execute(string code, Dictionary<string, object> args, IEnumerable<Assembly> refs)
+        static object _execute(string code, Dictionary<string, Tuple<Type, object>> args, IEnumerable<Assembly> refs)
         {
             var codeToCompile = _getCompileCode(code, args);
 
@@ -71,10 +74,10 @@ namespace RandomSolutions
                         }
             }
 
-            return compiled.Invoke(null, args?.Values.ToArray());
+            return compiled.Invoke(null, args?.Values.Select(x => x.Item2).ToArray());
         }
 
-        static string _getCompileCode(string code, Dictionary<string, object> vals)
+        static string _getCompileCode(string code, Dictionary<string, Tuple<Type, object>> args)
         {
             var codeBuilder = new StringBuilder(@"
             using System;
@@ -87,7 +90,7 @@ namespace RandomSolutions
                 public class Code
                 {
                     public static object Run(");
-            codeBuilder.Append(string.Join(", ", vals?.Select(x => $"{_getType(x.Value?.GetType())} {x.Key}") ?? new string[0]));
+            codeBuilder.Append(string.Join(", ", args?.Select(x => $"{_getType(x.Value.Item1)} {x.Key}") ?? new string[0]));
             codeBuilder.Append(@") {
                         ");
             codeBuilder.Append(code);
@@ -110,9 +113,6 @@ namespace RandomSolutions
 
         static string _getType(Type type)
         {
-            if (type == null)
-                type = typeof(object);
-
             if (type.IsGenericType == true)
             {
                 var gTypes = type.GenericTypeArguments.Select(x => _getType(x));
@@ -128,6 +128,17 @@ namespace RandomSolutions
             byte[] hash = sha.ComputeHash(Encoding.UTF8.GetBytes(data));
             var base64 = Convert.ToBase64String(hash);
             return base64;
+        }
+
+        static Dictionary<string, Tuple<Type, object>> _getArgs(object args)
+        {
+            return args.GetType().GetProperties().Where(x => x.CanRead)
+                .ToDictionary(x => x.Name, x => new Tuple<Type, object>(x.PropertyType, x.GetValue(args)));
+        }
+
+        static Dictionary<string, Tuple<Type, object>> _getArgs(Dictionary<string, object> args)
+        {
+            return args?.ToDictionary(x => x.Key, x => new Tuple<Type, object>(x.Value?.GetType() ?? typeof(object), x.Value));
         }
 
         static readonly Dictionary<string, MethodInfo> _compiled = new Dictionary<string, MethodInfo>();
