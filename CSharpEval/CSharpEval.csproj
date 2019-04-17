@@ -15,7 +15,7 @@
     <Copyright>Leonid Salavatov 2019</Copyright>
     <Product>RandomSolutions.CSharpEval</Product>
     <Title>RandomSolutions.CSharpEval</Title>
-    <Description>Compile and execute C# code dynamically at program runtime</Description>
+    <Description>Compile and execute C# code at program runtime</Description>
     <PackageTags>c# csharp eval expression function evaluator compile compiler execute roslyn</PackageTags>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageLicenseUrl>https://licenses.nuget.org/MIT</PackageLicenseUrl>
