@@ -9,8 +9,8 @@ namespace CoreConsoleApp
         {
             var result = CSharpEval.Execute<int>(@"
 	            var list = new List<int>() { 1, 2, 3, 4, 5 };
-	            var filter = list.Where(x => x < 4);
-	            return filter.Sum(x => x);");
+	            var filter = list.Where(x => x < k);
+	            return filter.Sum(x => x);", new { k = 4 });
         }
     }
 }

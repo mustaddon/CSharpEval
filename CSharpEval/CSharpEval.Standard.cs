@@ -13,11 +13,11 @@ namespace RandomSolutions
 {
     public partial class CSharpEval
     {
-        static MethodInfo _compile(string code, IEnumerable<Assembly> assemblies)
+        static MethodInfo _compile(string code, IEnumerable<Assembly> refs)
         {
             var assemblyPath = Path.GetDirectoryName(typeof(object).Assembly.Location);
 
-            var references = _references.Concat(assemblies.Select(x=>x.Location)).Distinct();
+            var references = _references.Concat((refs ?? new[] { Assembly.GetEntryAssembly(), Assembly.GetCallingAssembly() }).Select(x=>x.Location)).Distinct();
 
             var compilation = CSharpCompilation.Create(
                 assemblyName: Path.GetRandomFileName(),
@@ -46,7 +46,7 @@ namespace RandomSolutions
         
         static string _assemblyPath = Path.GetDirectoryName(typeof(object).Assembly.Location);
 
-        static IEnumerable<string> _references = _commonAssemblies.Select(x => x.Location)
+        static IEnumerable<string> _references = _commonRefs.Select(x => x.Location)
             .Concat(new[] {
                 Path.Combine(_assemblyPath, "System.Runtime.dll"),
             }).Distinct();

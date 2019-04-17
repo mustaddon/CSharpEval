@@ -10,6 +10,29 @@ namespace RandomSolutions
 {
     public partial class CSharpEval
     {
+        public static T Execute<T>(string code, object args, IEnumerable<Assembly> refs = null)
+        {
+            return Execute<T>(code, args.GetType().GetProperties().ToDictionary(x => x.Name, x => x.GetValue(args)), refs);
+        }
+
+        public static void Execute(string code, object args, IEnumerable<Assembly> refs = null)
+        {
+            Execute(code, args.GetType().GetProperties().ToDictionary(x => x.Name, x => x.GetValue(args)), refs);
+        }
+
+        public static T Execute<T>(string code, Dictionary<string, object> args = null, IEnumerable<Assembly> refs = null)
+        {
+            if (code.IndexOf(_return) < 0)
+                code = string.Concat(_return, code);
+
+            return (T)_execute(code, args, refs);
+        }
+
+        public static void Execute(string code, Dictionary<string, object> args = null, IEnumerable<Assembly> refs = null)
+        {
+            _execute(string.Concat(code, "; return null"), args, refs);
+        }
+
         public static uint CacheLimit = 10 << 10;
 
         public static void ClearCache()
@@ -17,41 +40,38 @@ namespace RandomSolutions
             lock (_compiled) _compiled.Clear();
         }
 
-        public static T Execute<T>(string code, Dictionary<string, object> vals = null, IEnumerable<Assembly> assemblies = null)
-        {
-            if (code.IndexOf(_return) < 0)
-                code = string.Concat(_return, code);
 
-            return (T)_execute(code, vals, assemblies);
-        }
 
-        public static void Execute(string code, Dictionary<string, object> vals = null, IEnumerable<Assembly> assemblies = null)
+        static object _execute(string code, Dictionary<string, object> args, IEnumerable<Assembly> refs)
         {
-            _execute(code + "; return null", vals, assemblies);
-        }
-        
-        static object _execute(string code, Dictionary<string, object> vals, IEnumerable<Assembly> assemblies)
-        {
-            var codeToCompile = _getCompileCode(code, vals);
-            var hash = _getHash(codeToCompile);
-            
+            var codeToCompile = _getCompileCode(code, args);
+
             MethodInfo compiled = null;
 
-            if (_compiled.ContainsKey(hash))
-                compiled = _compiled[hash];
+            if (CacheLimit == 0)
+            {
+                compiled = _compile(codeToCompile, refs);
+            }
             else
-                lock (_compiled)
-                    if (!_compiled.ContainsKey(hash))
-                    {
-                        compiled = _compile(codeToCompile, assemblies ?? new[] { Assembly.GetEntryAssembly(), Assembly.GetCallingAssembly() });
+            {
+                var hash = _getHash(codeToCompile);
 
-                        if (_compiled.Count > CacheLimit)
-                            _compiled.Clear();
+                if (_compiled.ContainsKey(hash))
+                    compiled = _compiled[hash];
+                else
+                    lock (_compiled)
+                        if (!_compiled.ContainsKey(hash))
+                        {
+                            compiled = _compile(codeToCompile, refs);
 
-                        _compiled.Add(hash, compiled);
-                    }
+                            if (_compiled.Count > CacheLimit)
+                                _compiled.Clear();
 
-            return compiled.Invoke(null, vals?.Values.ToArray());
+                            _compiled.Add(hash, compiled);
+                        }
+            }
+
+            return compiled.Invoke(null, args?.Values.ToArray());
         }
 
         static string _getCompileCode(string code, Dictionary<string, object> vals)
@@ -79,7 +99,7 @@ namespace RandomSolutions
             return codeBuilder.ToString();
         }
 
-        static readonly IEnumerable<Assembly> _commonAssemblies = new[] {
+        static readonly IEnumerable<Assembly> _commonRefs = new[] {
             typeof(Object).Assembly,
             typeof(Console).Assembly,
             typeof(Enumerable).Assembly,
@@ -111,7 +131,7 @@ namespace RandomSolutions
         }
 
         static readonly Dictionary<string, MethodInfo> _compiled = new Dictionary<string, MethodInfo>();
-        
+
         const string _return = "return ";
     }
 }

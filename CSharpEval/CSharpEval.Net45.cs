@@ -11,12 +11,12 @@ namespace RandomSolutions
 {
     public partial class CSharpEval
     {
-        static IEnumerable<string> _assemblyNames = _commonAssemblies.Select(x => x.ManifestModule.Name);
+        static IEnumerable<string> _assemblyNames = _commonRefs.Select(x => x.ManifestModule.Name);
 
-        static MethodInfo _compile(string code, IEnumerable<Assembly> assemblies)
+        static MethodInfo _compile(string code, IEnumerable<Assembly> refs)
         {
             var assemblyNames = _assemblyNames
-                .Concat(assemblies.Select(x => x.ManifestModule.Name))
+                .Concat((refs ?? new[] { Assembly.GetEntryAssembly(), Assembly.GetCallingAssembly() }).Select(x => x.ManifestModule.Name))
                 .Distinct()
                 .ToArray();
 
